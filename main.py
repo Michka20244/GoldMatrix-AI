@@ -6,7 +6,7 @@ app = FastAPI(title="GoldMatrix AI Bridge")
 
 CAPITAL_API_KEY = os.getenv("CAPITAL_API_KEY")
 CAPITAL_IDENTIFIER = os.getenv("CAPITAL_IDENTIFIER")
-CAPITAL_PASSWORD = os.getenv("CAPITAL_PASSWORD")
+CAPITAL_PASSWORD = os.getenv("CAPITAL_API_PASSWORD")
 FRED_API_KEY = os.getenv("FRED_API_KEY")
 
 CAPITAL_BASE_URL = "https://demo-api-capital.backend-capital.com/api/v1"
