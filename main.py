@@ -14,7 +14,7 @@ CAPITAL_PASSWORD = os.getenv("CAPITAL_PASSWORD") or os.getenv("CAPITAL_API_PASSW
 FRED_API_KEY = os.getenv("FRED_API_KEY")
 
 # Base URLs
-CAPITAL_BASE_URL = "https://demo-api-capital.backend-capital.com/api/v1"
+CAPITAL_BASE_URL = "https://api-capital.backend-capital.com/api/v1"
 FRED_BASE_URL = "https://api.stlouisfed.org/fred/series/observations"
 
 # Timeframe / Resolution Map
