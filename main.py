@@ -4,7 +4,6 @@ import os
 
 app = FastAPI(title="GoldMatrix AI Bridge")
 
-# جلب البيانات الحساسة حصراً من متغيرات بيئة Render
 CAPITAL_API_KEY = os.getenv("CAPITAL_API_KEY")
 CAPITAL_IDENTIFIER = os.getenv("CAPITAL_IDENTIFIER")
 CAPITAL_PASSWORD = os.getenv("CAPITAL_PASSWORD")
@@ -24,9 +23,10 @@ EPIC_MAP = {
 
 def get_capital_session():
     if not all([CAPITAL_API_KEY, CAPITAL_IDENTIFIER, CAPITAL_PASSWORD]):
-        raise HTTPException(status_code=500, detail="Capital.com credentials are missing in Environment Variables")
+        raise HTTPException(status_code=500, detail="Capital.com credentials missing in Environment Variables")
 
-    url = f"{CAPITAL_BASE_URL}/session"
+    # 1. إنشاء الجلسة الرئيسية
+    session_url = f"{CAPITAL_BASE_URL}/session"
     headers = {
         "X-CAP-API-KEY": CAPITAL_API_KEY,
         "Content-Type": "application/json"
@@ -36,7 +36,7 @@ def get_capital_session():
         "password": CAPITAL_PASSWORD
     }
     
-    response = requests.post(url, json=payload, headers=headers)
+    response = requests.post(session_url, json=payload, headers=headers)
     
     if response.status_code != 200:
         raise HTTPException(
@@ -46,6 +46,27 @@ def get_capital_session():
     
     cst = response.headers.get("CST")
     x_security_token = response.headers.get("X-SECURITY-TOKEN")
+    
+    auth_headers = {
+        "X-CAP-API-KEY": CAPITAL_API_KEY,
+        "CST": cst,
+        "X-SECURITY-TOKEN": x_security_token
+    }
+
+    # 2. التغلب على خطأ null.accountId عبر جلب الحساب الأول وتثبيته
+    acc_response = requests.get(f"{CAPITAL_BASE_URL}/accounts", headers=auth_headers)
+    if acc_response.status_code == 200:
+        accounts_data = acc_response.json()
+        accounts = accounts_data.get("accounts", [])
+        if accounts:
+            active_account_id = accounts[0].get("accountId")
+            # تحويل الجلسة إلى الحساب النشط
+            requests.put(
+                f"{CAPITAL_BASE_URL}/session", 
+                json={"accountId": active_account_id}, 
+                headers=auth_headers
+            )
+
     return cst, x_security_token
 
 @app.get("/market-data/{epic}")
@@ -77,7 +98,7 @@ def get_market_data(epic: str, resolution: str = "MINUTE_15", max_candles: int =
 @app.get("/fred/{series_id}")
 def get_fred_data(series_id: str):
     if not FRED_API_KEY:
-        raise HTTPException(status_code=500, detail="FRED_API_KEY is missing in Environment Variables")
+        raise HTTPException(status_code=500, detail="FRED_API_KEY missing in Environment Variables")
         
     url = f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}&sort_order=desc&limit=1&file_type=json&api_key={FRED_API_KEY}"
     res = requests.get(url)
